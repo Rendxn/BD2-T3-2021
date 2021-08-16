@@ -9,7 +9,6 @@ public class MongoClientInstance {
 
     /**
      *
-     * @param connectionString URI string of the mongodb database.
      * @return MongoClient
      */
     public static MongoClient mongoClient() {

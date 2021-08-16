@@ -2,7 +2,7 @@
   <configuration default="false" name="App" type="Application" factoryName="Application" nameIsGenerated="true">
     <option name="MAIN_CLASS_NAME" value="org.unalmed.App" />
     <module name="BD2-T3-2021" />
-    <option name="VM_PARAMETERS" value="-Dmongodb.uri=mongodb://localhost:27017 -Dmongodb.database=bd2-t3" />
+    <option name="VM_PARAMETERS" value="-Dmongodb.uri=mongodb://localhost:27017 -Dmongodb.database=bd2-t3 -Doracledb.url=localhost:1521 -Doracledb.username=sarendongi -Doracledb.password=password" />
     <extension name="coverage">
       <pattern>
         <option name="PATTERN" value="org.unalmed.*" />

@@ -16,6 +16,9 @@ public class Venta {
     @BsonProperty(value = "cc_vendedor")
     private String ccVendedor;
 
+    @BsonProperty(value = "ventas_vendedor")
+    private String totalVendedor;
+
     public ObjectId getId() {
         return id;
     }
@@ -46,5 +49,13 @@ public class Venta {
 
     public void setCcVendedor(String ccVendedor) {
         this.ccVendedor = ccVendedor;
+    }
+
+    public String getTotalVendedor() {
+        return totalVendedor;
+    }
+
+    public void setTotalVendedor(String totalVendedor) {
+        this.totalVendedor = totalVendedor;
     }
 }

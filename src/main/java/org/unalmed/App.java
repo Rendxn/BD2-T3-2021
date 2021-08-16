@@ -8,8 +8,13 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
+import org.unalmed.config.OracleClientInstance;
+import org.unalmed.daos.EstadisticaDAO;
 
 import java.io.IOException;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.Statement;
 
 /**
  * JavaFX App
@@ -38,6 +43,12 @@ public class App extends Application {
 //        MongoClient mongoClient = MongoClientInstance.mongoClient();
 //        String databaseName = System.getProperty("mongodb.database");
 //        MongoDatabase mongoDatabase = mongoClient.getDatabase(databaseName);
+
+//        Connection conn = OracleClientInstance.oracleClient();
+
+        EstadisticaDAO estadisticaDAO = new EstadisticaDAO();
+        estadisticaDAO.generate();
+
         launch();
     }
 

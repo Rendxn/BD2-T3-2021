@@ -7,7 +7,7 @@
 <?import javafx.scene.layout.GridPane?>
 <?import javafx.scene.layout.RowConstraints?>
 
-<AnchorPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="400.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/16" xmlns:fx="http://javafx.com/fxml/1" fx:controller="org.unalmed.controllers.homeController">
+<AnchorPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="400.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/16" xmlns:fx="http://javafx.com/fxml/1" fx:controller="org.unalmed.controllers.HomeController">
    <children>
       <GridPane alignment="CENTER" layoutX="24.0" layoutY="140.0" prefHeight="184.0" prefWidth="554.0">
         <columnConstraints>
@@ -20,9 +20,9 @@
         </rowConstraints>
          <children>
 
-            <Button  alignment="CENTER" contentDisplay="CENTER" mnemonicParsing="false"  prefHeight="37.0" prefWidth="146.0" text="Generar Estadísticas" textAlignment="CENTER" />
-            <Button  alignment="CENTER" contentDisplay="CENTER" mnemonicParsing="false"  prefHeight="37.0" prefWidth="144.0" text="Visualizar Estadísticas" textAlignment="CENTER" GridPane.columnIndex="1" />
-            <Button  alignment="CENTER" contentDisplay="CENTER" mnemonicParsing="false"  prefHeight="37.0" prefWidth="140.0" text="Vaciar arreglos" textAlignment="CENTER" GridPane.columnIndex="2" />
+            <Button  alignment="CENTER" contentDisplay="CENTER" mnemonicParsing="false"  prefHeight="37.0" prefWidth="146.0" text="Generar Estadísticas" textAlignment="CENTER" onAction="#generateStats" />
+            <Button  alignment="CENTER" contentDisplay="CENTER" mnemonicParsing="false"  prefHeight="37.0" prefWidth="144.0" text="Visualizar Estadísticas" textAlignment="CENTER" GridPane.columnIndex="1" onAction="#switchToViewStats" />
+            <Button  alignment="CENTER" contentDisplay="CENTER" mnemonicParsing="false"  prefHeight="37.0" prefWidth="140.0" text="Vaciar arreglos" textAlignment="CENTER" GridPane.columnIndex="2" onAction="#clearStats"/>
          </children>
       </GridPane>
       <Label alignment="CENTER" layoutY="104.0" prefHeight="43.0" prefWidth="600.0" text="BIENVENIDO" />

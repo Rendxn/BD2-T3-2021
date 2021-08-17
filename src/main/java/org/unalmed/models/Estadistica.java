@@ -3,17 +3,19 @@ package org.unalmed.models;
 import org.bson.codecs.pojo.annotations.BsonProperty;
 import org.bson.types.ObjectId;
 
-import java.util.ArrayList;
+import java.util.List;
 
 public class Estadistica {
 
+    @BsonProperty("_id")
     private ObjectId id;
-
     private String departamento;
 
-    // Quiero poner mis_ventas, pero la guía poine misventas. Ugly T-T
-    @BsonProperty(value = "misventas")
-    private ArrayList<Venta> misVentas;
+    @BsonProperty("misventas")
+    private List<Venta> misVentas;
+
+    public Estadistica() {
+    }
 
     public ObjectId getId() {
         return id;
@@ -23,11 +25,11 @@ public class Estadistica {
         this.id = id;
     }
 
-    public ArrayList<Venta> getMisVentas() {
+    public List<Venta> getMisVentas() {
         return misVentas;
     }
 
-    public void setMisVentas(ArrayList<Venta> misVentas) {
+    public void setMisVentas(List<Venta> misVentas) {
         this.misVentas = misVentas;
     }
 

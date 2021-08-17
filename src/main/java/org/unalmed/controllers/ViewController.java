@@ -8,4 +8,9 @@ import org.unalmed.App;
 public class ViewController {
     public ViewController() {
     }
+
+    @FXML
+    private void switchHome(ActionEvent event) throws IOException {
+        App.setRoot("home");
+    }
 }

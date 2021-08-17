@@ -16,7 +16,7 @@ public class HomeController {
 
     @FXML
     private void switchToViewStats(ActionEvent event) throws IOException {
-        App.setRoot("");
+        App.setRoot("view");
     }
 
     @FXML

@@ -1,14 +1,13 @@
 package org.unalmed.daos;
 
 import com.mongodb.MongoBulkWriteException;
-import com.mongodb.MongoClientSettings;
+import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.result.InsertManyResult;
 import org.bson.Document;
 import org.bson.codecs.configuration.CodecRegistry;
-import org.bson.codecs.pojo.PojoCodecProvider;
 import org.slf4j.LoggerFactory;
 import org.unalmed.config.MongoClientInstance;
 import org.unalmed.config.OracleClientInstance;
@@ -16,8 +15,9 @@ import org.unalmed.models.Estadistica;
 import org.unalmed.models.Venta;
 import org.slf4j.Logger;
 
-import static org.bson.codecs.configuration.CodecRegistries.fromProviders;
-import static org.bson.codecs.configuration.CodecRegistries.fromRegistries;
+//import org.bson.codecs.pojo.PojoCodecProvider;
+//import static org.bson.codecs.configuration.CodecRegistries.fromProviders;
+//import static org.bson.codecs.configuration.CodecRegistries.fromRegistries;
 
 import java.sql.*;
 import java.util.ArrayList;
@@ -144,16 +144,15 @@ public class EstadisticaDAO {
                 }
             }
         }
-        // Store in Mongo
-        try {
-            List<Estadistica> estadisticasList = new ArrayList<Estadistica>(this.estadisticas.values());
-            storeInMongo(estadisticasList);
-        } catch (MongoBulkWriteException ex) {
-            System.out.println("Hubo un error insertando los datos: " + ex.getMessage());
-        }
         return this.estadisticas;
     }
 
+    /**
+     * Inserta en Mongo estadisticos generados en OracleDB.
+     * @param estadisticas - Estadisticas a ser insertadas en Mongo
+     * @return InsertManyResult
+     * @throws MongoBulkWriteException
+     */
     public InsertManyResult storeInMongo(List<Estadistica> estadisticas) throws MongoBulkWriteException {
         List<Document> documents = new ArrayList<>();
         for (Estadistica est : estadisticas) {
@@ -178,4 +177,59 @@ public class EstadisticaDAO {
         return result;
     }
 
+    public InsertManyResult storeInMongo() throws MongoBulkWriteException {
+        List<Document> documents = new ArrayList<>();
+        for (Estadistica est : this.estadisticas.values()) {
+            Document estadistica = new Document();
+            estadistica.append("departamento", est.getDepartamento());
+            ArrayList<Document> misventas = new ArrayList<>();
+            for (Venta ven : est.getMisVentas()) {
+                Document venta = new Document();
+                venta.append("nombre_ciudad", ven.getNombreCiudad());
+                venta.append("total_ciudad", ven.getTotalCiudad());
+                venta.append("cc_vendedor", ven.getCcVendedor());
+                venta.append("total_vendedor", ven.getTotalVendedor());
+                misventas.add(venta);
+            }
+            estadistica.append("misventas", misventas);
+            documents.add(estadistica);
+        }
+
+        InsertManyResult result = this.estadisticasCollection.insertMany(documents);
+
+        System.out.println(result.toString());
+        return result;
+    }
+
+    /**
+     * Trae todas las estadísticas en MongoDB y mappea a objetos.
+     * @return List<Estadistica>
+     */
+    // TODO: Generar las demás estadísticas.
+    public List<Estadistica> getEstadisticas() {
+        List<Document> documents = new ArrayList<>();
+        List<Estadistica> estadisticas = new ArrayList<>();
+        // this.estadisticasCollection.find().iterator().forEachRemaining(documents::add);
+        // TODO: Generar las demás estadísticas.
+        FindIterable<Document> result = this.estadisticasCollection.find();
+        for (Document doc : result) {
+            Estadistica est = new Estadistica();
+            est.setId(doc.getObjectId("_id"));
+            est.setDepartamento(doc.getString("departamento"));
+
+            List<Document> ventas_docs = doc.getList("misventas", Document.class);
+            List<Venta> ventas = new ArrayList<>();
+            for(Document v : ventas_docs) {
+                Venta venta = new Venta();
+                venta.setCcVendedor(v.getString("cc_vendedor"));
+                venta.setNombreCiudad(v.getString("nombre_ciudad"));
+                venta.setTotalCiudad(v.getInteger("total_ciudad"));
+                venta.setTotalVendedor(v.getInteger("total_vendedor"));
+                ventas.add(venta);
+            }
+            est.setMisVentas(ventas);
+            estadisticas.add(est);
+        }
+        return estadisticas;
+    }
 }

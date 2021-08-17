@@ -90,8 +90,6 @@ public class EstadisticaDAO {
             while (rs.next()) {
                 transform(rs);
             }
-
-            return this.estadisticas;
         } catch (SQLException ex) {
             throw new SQLException("Error generando estadísticas", ex);
         } finally {
@@ -110,6 +108,7 @@ public class EstadisticaDAO {
                 }
             }
         }
+        return this.estadisticas;
     }
 
 }

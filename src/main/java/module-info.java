@@ -7,6 +7,7 @@ module org.unalmed {
     requires java.sql;
     requires java.naming;
     requires ojdbc11;
+    requires slf4j.api;
     exports org.unalmed;
     exports org.unalmed.controllers;
     opens org.unalmed.controllers to javafx.fxml;

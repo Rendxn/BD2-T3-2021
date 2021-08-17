@@ -5,27 +5,27 @@ import org.bson.types.ObjectId;
 
 public class Venta {
 
-    private ObjectId id;
+    // private ObjectId id;
 
-    @BsonProperty(value = "nombre_ciudad")
+    @BsonProperty("nombre_ciudad")
     private String nombreCiudad;
 
-    @BsonProperty(value = "total_ciudad")
+    @BsonProperty("total_ciudad")
     private int totalCiudad;
 
-    @BsonProperty(value = "cc_vendedor")
+    @BsonProperty("cc_vendedor")
     private String ccVendedor;
 
-    @BsonProperty(value = "ventas_vendedor")
+    @BsonProperty("total_vendedor")
     private int totalVendedor;
 
-    public ObjectId getId() {
-        return id;
-    }
+//    public ObjectId getId() {
+//        return id;
+//    }
 
-    public void setId(ObjectId id) {
-        this.id = id;
-    }
+//    public void setId(ObjectId id) {
+//        this.id = id;
+//    }
 
     public String getNombreCiudad() {
         return nombreCiudad;
@@ -62,8 +62,7 @@ public class Venta {
     @Override
     public String toString() {
         return "Venta{" +
-                "id=" + id +
-                ", nombreCiudad='" + nombreCiudad + '\'' +
+                "nombreCiudad='" + nombreCiudad + '\'' +
                 ", totalCiudad=" + totalCiudad +
                 ", ccVendedor='" + ccVendedor + '\'' +
                 ", totalVendedor=" + totalVendedor +

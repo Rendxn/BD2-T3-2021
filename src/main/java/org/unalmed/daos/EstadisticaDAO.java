@@ -1,11 +1,24 @@
 package org.unalmed.daos;
 
+import com.mongodb.MongoBulkWriteException;
+import com.mongodb.MongoClientSettings;
+import com.mongodb.client.MongoClient;
+import com.mongodb.client.MongoCollection;
+import com.mongodb.client.MongoDatabase;
+import com.mongodb.client.result.InsertManyResult;
+import org.bson.Document;
+import org.bson.codecs.configuration.CodecRegistry;
+import org.bson.codecs.pojo.PojoCodecProvider;
+import org.slf4j.LoggerFactory;
+import org.unalmed.config.MongoClientInstance;
 import org.unalmed.config.OracleClientInstance;
-import org.unalmed.models.Ciudad;
 import org.unalmed.models.Estadistica;
 import org.unalmed.models.Venta;
+import org.slf4j.Logger;
 
-import java.lang.reflect.Field;
+import static org.bson.codecs.configuration.CodecRegistries.fromProviders;
+import static org.bson.codecs.configuration.CodecRegistries.fromRegistries;
+
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -17,19 +30,42 @@ public class EstadisticaDAO {
 
     final String GETSTATS = "SELECT * FROM ( SELECT cc, ciudad, departamento, total, rank() over (partition by ciudad order by total desc) rank FROM ( SELECT cc, e.miciu.nom AS ciudad, e.miciu.midep.nom AS departamento, SUM(v.miprod.precio_unitario * v.nro_unidades) total FROM empleado e, TABLE (e.ventas) v GROUP BY e.cc, e.miciu.midep.nom, e.miciu.nom ORDER BY total desc ) ) WHERE rank = 1";
     final String GETTOTALCITIES = "SELECT e.miciu.nom AS ciudad, SUM(v.nro_unidades*v.miprod.precio_unitario) AS total FROM empleado e, TABLE(e.ventas) v GROUP BY e.miciu.nom";
+    final String BULKINSERT = "";
 
-    private Connection oracleConn;
     private Map<String, Estadistica> estadisticas;
     private Map<String, Integer> totalCiudad;
 
+    public static String ESTADISTICAS_COLLECTION = "estadisticas";
+    private MongoCollection<Document> estadisticasCollection;
+    private MongoClient mongoClient;
+    private MongoDatabase mongoDatabase;
+    private final Logger log;
+    private CodecRegistry pojoCodecRegistry;
+
+    private Connection oracleConn;
+
     public EstadisticaDAO() {
-        this.oracleConn = OracleClientInstance.oracleClient();
+        // Vars
         this.estadisticas = new HashMap<>();
         this.totalCiudad = new HashMap<>();
+        // OracleDB
+        this.oracleConn = OracleClientInstance.oracleClient();
+        // MongoDB
+        this.mongoClient = MongoClientInstance.mongoClient();
+        this.mongoDatabase = this.mongoClient.getDatabase(System.getProperty("mongodb.database"));
+        this.log = LoggerFactory.getLogger(this.getClass());
+        // No quiso funcionar el codec ???
+//        this.pojoCodecRegistry =
+//                fromRegistries(
+//                        MongoClientSettings.getDefaultCodecRegistry(),
+//                        fromProviders(PojoCodecProvider.builder().automatic(true).build()));
+        this.estadisticasCollection = mongoDatabase.getCollection(ESTADISTICAS_COLLECTION);
+
     }
 
     /**
      * Transforma un ResultSet en los correspondientes POJOs (Plain old Java Object)
+     *
      * @param rs - ResultSet extraído de la query GETSTATS.
      * @return Estadistica
      * @throws SQLException
@@ -49,16 +85,15 @@ public class EstadisticaDAO {
 
             if (this.estadisticas.containsKey(depto)) {
                 est = this.estadisticas.get(depto);
-                ArrayList<Venta> estVentas = est.getMisVentas();
+                List<Venta> estVentas = est.getMisVentas();
                 estVentas.add(venta);
-                estadisticas.put(depto, est);
             } else {
                 est = new Estadistica();
                 est.setMisVentas(new ArrayList<Venta>());
                 est.setDepartamento(depto);
                 est.getMisVentas().add(venta);
-                estadisticas.put(depto, est);
             }
+            estadisticas.put(depto, est);
             return est;
 
         } catch (SQLException e) {
@@ -69,6 +104,7 @@ public class EstadisticaDAO {
 
     /**
      * Genera las estadísticas necesarias.
+     *
      * @return Map<String, Estadistica>
      * @throws SQLException
      */
@@ -108,7 +144,38 @@ public class EstadisticaDAO {
                 }
             }
         }
+        // Store in Mongo
+        try {
+            List<Estadistica> estadisticasList = new ArrayList<Estadistica>(this.estadisticas.values());
+            storeInMongo(estadisticasList);
+        } catch (MongoBulkWriteException ex) {
+            System.out.println("Hubo un error insertando los datos: " + ex.getMessage());
+        }
         return this.estadisticas;
+    }
+
+    public InsertManyResult storeInMongo(List<Estadistica> estadisticas) throws MongoBulkWriteException {
+        List<Document> documents = new ArrayList<>();
+        for (Estadistica est : estadisticas) {
+            Document estadistica = new Document();
+            estadistica.append("departamento", est.getDepartamento());
+            ArrayList<Document> misventas = new ArrayList<>();
+            for (Venta ven : est.getMisVentas()) {
+                Document venta = new Document();
+                venta.append("nombre_ciudad", ven.getNombreCiudad());
+                venta.append("total_ciudad", ven.getTotalCiudad());
+                venta.append("cc_vendedor", ven.getCcVendedor());
+                venta.append("total_vendedor", ven.getTotalVendedor());
+                misventas.add(venta);
+            }
+            estadistica.append("misventas", misventas);
+            documents.add(estadistica);
+        }
+
+        InsertManyResult result = this.estadisticasCollection.insertMany(documents);
+
+        System.out.println(result.toString());
+        return result;
     }
 
 }

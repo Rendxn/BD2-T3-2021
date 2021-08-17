@@ -18,6 +18,8 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 
+
+
 /**
  * JavaFX App
  */
@@ -49,14 +51,6 @@ public class App extends Application {
 //        MongoDatabase mongoDatabase = mongoClient.getDatabase(databaseName);
 
 //        Connection conn = OracleClientInstance.oracleClient();
-
-        EstadisticaDAO estadisticaDAO = new EstadisticaDAO();
-        try {
-            System.out.println(estadisticaDAO.generate());;
-        } catch (SQLException e) {
-            //
-        }
-
         launch();
     }
 

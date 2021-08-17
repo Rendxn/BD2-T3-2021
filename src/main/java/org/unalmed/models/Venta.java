@@ -11,13 +11,13 @@ public class Venta {
     private String nombreCiudad;
 
     @BsonProperty(value = "total_ciudad")
-    private String totalCiudad;
+    private int totalCiudad;
 
     @BsonProperty(value = "cc_vendedor")
     private String ccVendedor;
 
     @BsonProperty(value = "ventas_vendedor")
-    private String totalVendedor;
+    private int totalVendedor;
 
     public ObjectId getId() {
         return id;
@@ -35,11 +35,11 @@ public class Venta {
         this.nombreCiudad = nombreCiudad;
     }
 
-    public String getTotalCiudad() {
+    public int getTotalCiudad() {
         return totalCiudad;
     }
 
-    public void setTotalCiudad(String totalCiudad) {
+    public void setTotalCiudad(int totalCiudad) {
         this.totalCiudad = totalCiudad;
     }
 
@@ -51,11 +51,22 @@ public class Venta {
         this.ccVendedor = ccVendedor;
     }
 
-    public String getTotalVendedor() {
+    public int getTotalVendedor() {
         return totalVendedor;
     }
 
-    public void setTotalVendedor(String totalVendedor) {
+    public void setTotalVendedor(int totalVendedor) {
         this.totalVendedor = totalVendedor;
+    }
+
+    @Override
+    public String toString() {
+        return "Venta{" +
+                "id=" + id +
+                ", nombreCiudad='" + nombreCiudad + '\'' +
+                ", totalCiudad=" + totalCiudad +
+                ", ccVendedor='" + ccVendedor + '\'' +
+                ", totalVendedor=" + totalVendedor +
+                '}';
     }
 }

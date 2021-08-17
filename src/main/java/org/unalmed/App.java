@@ -15,6 +15,7 @@ import org.unalmed.daos.EstadisticaDAO;
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.sql.Statement;
 
 /**
@@ -50,7 +51,11 @@ public class App extends Application {
 //        Connection conn = OracleClientInstance.oracleClient();
 
         EstadisticaDAO estadisticaDAO = new EstadisticaDAO();
-        estadisticaDAO.generate();
+        try {
+            System.out.println(estadisticaDAO.generate());;
+        } catch (SQLException e) {
+            //
+        }
 
         launch();
     }

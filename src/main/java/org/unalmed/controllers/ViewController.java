@@ -13,12 +13,14 @@ import org.unalmed.models.EstadisticaGlobal;
 public class ViewController {
     EstadisticaDAO estadisticaDAO;
     List<EstadisticaDepartamento> estadisticasDepartamento;
-    List<EstadisticaGlobal> estadisticasGlobales;
+    EstadisticaGlobal estadisticasGlobales;
 
     public ViewController() {
         this.estadisticaDAO = new EstadisticaDAO();
-        this.estadisticasDepartamento = this.estadisticaDAO.getEstadisticasDepartamentos();
-        System.out.println(this.estadisticasDepartamento);
+//        this.estadisticasDepartamento = this.estadisticaDAO.getEstadisticasDepartamentos();
+//        System.out.println(this.estadisticasDepartamento);
+        this.estadisticasGlobales = this.estadisticaDAO.getEstadisticasGlobales();
+        System.out.println(this.estadisticasGlobales);
     }
 
     @FXML

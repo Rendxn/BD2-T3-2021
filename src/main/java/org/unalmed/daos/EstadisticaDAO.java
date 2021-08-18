@@ -11,6 +11,7 @@ import org.bson.conversions.Bson;
 import org.slf4j.LoggerFactory;
 import org.unalmed.config.MongoClientInstance;
 import org.unalmed.config.OracleClientInstance;
+import org.unalmed.models.Departamento;
 import org.unalmed.models.EstadisticaDepartamento;
 import org.unalmed.models.EstadisticaGlobal;
 import org.unalmed.models.Venta;
@@ -36,7 +37,7 @@ public class EstadisticaDAO {
     private Map<String, EstadisticaDepartamento> estadisticas;
     private Map<String, Integer> totalCiudad;
     private List<EstadisticaDepartamento> estadisticaDepartamentos;
-    private List<EstadisticaDepartamento> estadisticasGlobales;
+    private EstadisticaGlobal estadisticasGlobales;
 
     public static String ESTADISTICAS_COLLECTION = "estadisticas";
     private MongoCollection<Document> estadisticasCollection;
@@ -54,13 +55,13 @@ public class EstadisticaDAO {
         // OracleDB
         try {
             this.oracleConn = OracleClientInstance.oracleClient();
-        } catch(SQLException ex) {
+        } catch (SQLException ex) {
             System.out.println("Hubo un error conectando a la base de datos de Oracle");
         }
         // MongoDB
         try {
             this.mongoClient = MongoClientInstance.mongoClient();
-        } catch(MongoException ex) {
+        } catch (MongoException ex) {
             System.out.println("Hubo un error conectando a la base de datos de MongoDB");
         }
         this.mongoDatabase = this.mongoClient.getDatabase(System.getProperty("mongodb.database"));
@@ -160,6 +161,7 @@ public class EstadisticaDAO {
 
     /**
      * Inserta en Mongo estadisticos generados en OracleDB.
+     *
      * @param estadisticaDepartamentos - Estadisticas a ser insertadas en Mongo
      * @return InsertManyResult
      * @throws MongoBulkWriteException
@@ -215,9 +217,9 @@ public class EstadisticaDAO {
 
     /**
      * Trae las estadísticas por departamento en MongoDB y mappea a objetos.
+     *
      * @return List<Estadistica>
      */
-    // TODO: Generar estadísticas globales.
     public List<EstadisticaDepartamento> getEstadisticasDepartamentos() {
         Bson unwind1 = unwind("$misventas");
         Bson sort1 = sort(descending("misventas.total_vendedor"));
@@ -236,7 +238,7 @@ public class EstadisticaDAO {
 
         AggregateIterable<Document> result = this.estadisticasCollection.aggregate(Arrays.asList(unwind1, sort1, group1, unwind2, sort2, group2));
 
-        this.estadisticaDepartamentos = transformMongo(result);
+        this.estadisticaDepartamentos = transformEstadisticasDepartamentos(result);
 
         return estadisticaDepartamentos;
     }
@@ -247,20 +249,58 @@ public class EstadisticaDAO {
      * - Nombre y valor de la ciudad que tuvo el valor total de ventas más alto.
      * - CC y valor del vendedor que tuvo el valor total de ventas más alto.
      * - CC y valor del vendedor que tuvo el valor total de ventas más bajo.
+     *
      * @return List
      */
     public EstadisticaGlobal getEstadisticasGlobales() {
+
+        Document reg = getEstadsiticasRegion();
+        Document ven = getEstadisticasVendedores();
+
+        this.estadisticasGlobales = transformEstadisticasGlobales(ven, reg);
+
+        return this.estadisticasGlobales;
+    }
+
+    public Document getEstadisticasVendedores() {
         Bson unwind = unwind("$misventas");
         Bson sort = sort(descending("misventas.total_vendedor"));
-        return new EstadisticaGlobal();
+        BsonField first = first("mejor_vendedor", "$misventas");
+        BsonField last = last("peor_vendedor", "$misventas");
+        Bson group = group("", first, last);
+
+        AggregateIterable<Document> vendedor = this.estadisticasCollection.aggregate(
+                Arrays.asList(unwind, sort, group));
+        return vendedor.first();
+    }
+
+    public Document getEstadsiticasRegion() {
+        Bson unwind1 = unwind("$misventas");
+        Bson sort1 = sort(descending("misventas.total_ciudad"));
+        BsonField sum1 = sum("total_departamento", "$misventas.total_ciudad");
+        BsonField first1 = first("nombre_departamento", "$departamento");
+        BsonField push1 = push("misventas", "$misventas");
+        Bson group1 = group("$departamento", sum1, first1, push1);
+        Bson unwind2 = unwind("$misventas");
+        Bson sort2 = sort(descending("total_departamento"));
+        BsonField first2 = first("nombre_departamento", "$nombre_departamento");
+        BsonField first3 = first("total_departamento", "$total_departamento");
+        BsonField first4 = first("mejor_ciudad", "$misventas");
+        Bson group2 = group("", first2, first3, first4);
+
+        AggregateIterable<Document> region = this.estadisticasCollection.aggregate(
+                Arrays.asList(unwind1, sort1, group1, unwind2, sort2, group2));
+
+        return region.first();
     }
 
     /**
      * Transforma queries de Mongo en POJO.
+     *
      * @param documents - Documentos a ser convertidos en objetos
      * @return
      */
-    public List<EstadisticaDepartamento> transformMongo(AggregateIterable<Document> documents) {
+    public List<EstadisticaDepartamento> transformEstadisticasDepartamentos(AggregateIterable<Document> documents) {
         List<EstadisticaDepartamento> estadisticaDepartamentos = new ArrayList<>();
         for (Document doc : documents) {
             EstadisticaDepartamento est = new EstadisticaDepartamento();
@@ -279,8 +319,30 @@ public class EstadisticaDAO {
     }
 
     /**
+     * Transforma estadisticas globales de MongoDB en objetos.
+     * @param vend
+     * @param reg
+     * @return
+     */
+    public EstadisticaGlobal transformEstadisticasGlobales(Document vend, Document reg) {
+        EstadisticaGlobal estadistica = null;
+        estadistica = new EstadisticaGlobal();
+
+        Departamento dept = new Departamento();
+        dept.setNom(reg.getString("nombre_departamento"));
+        dept.setTotalVentas(reg.getInteger("total_departamento"));
+        estadistica.setMejorDepartamento(dept);
+        estadistica.setMejorCiudad(transformVentaMongo((Document) reg.get("mejor_ciudad")));
+        estadistica.setMejorVendedor(transformVentaMongo((Document) vend.get("mejor_vendedor")));
+        estadistica.setPeorVendedor(transformVentaMongo((Document) vend.get("peor_vendedor")));
+
+        return estadistica;
+    }
+
+    /**
      * Transforma una venta que viene de Mongo en Objeto
      * TODO: Refactor into own DAO
+     *
      * @param v Document
      * @return Venta
      */

@@ -7,15 +7,18 @@ import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import org.unalmed.App;
 import org.unalmed.daos.EstadisticaDAO;
-import org.unalmed.models.Estadistica;
+import org.unalmed.models.EstadisticaDepartamento;
+import org.unalmed.models.EstadisticaGlobal;
 
 public class ViewController {
     EstadisticaDAO estadisticaDAO;
-    List<Estadistica> estadisticas;
+    List<EstadisticaDepartamento> estadisticasDepartamento;
+    List<EstadisticaGlobal> estadisticasGlobales;
+
     public ViewController() {
         this.estadisticaDAO = new EstadisticaDAO();
-        this.estadisticas = this.estadisticaDAO.getEstadisticas();
-        System.out.println(this.estadisticas);
+        this.estadisticasDepartamento = this.estadisticaDAO.getEstadisticasDepartamentos();
+        System.out.println(this.estadisticasDepartamento);
     }
 
     @FXML

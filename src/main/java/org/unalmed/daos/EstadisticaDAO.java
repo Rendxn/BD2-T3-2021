@@ -1,39 +1,41 @@
 package org.unalmed.daos;
 
 import com.mongodb.MongoBulkWriteException;
-import com.mongodb.client.FindIterable;
-import com.mongodb.client.MongoClient;
-import com.mongodb.client.MongoCollection;
-import com.mongodb.client.MongoDatabase;
+import com.mongodb.client.*;
+import com.mongodb.client.model.BsonField;
 import com.mongodb.client.result.InsertManyResult;
 import org.bson.Document;
 import org.bson.codecs.configuration.CodecRegistry;
+import org.bson.conversions.Bson;
 import org.slf4j.LoggerFactory;
 import org.unalmed.config.MongoClientInstance;
 import org.unalmed.config.OracleClientInstance;
-import org.unalmed.models.Estadistica;
+import org.unalmed.models.EstadisticaDepartamento;
+import org.unalmed.models.EstadisticaGlobal;
 import org.unalmed.models.Venta;
 import org.slf4j.Logger;
 
-//import org.bson.codecs.pojo.PojoCodecProvider;
-//import static org.bson.codecs.configuration.CodecRegistries.fromProviders;
-//import static org.bson.codecs.configuration.CodecRegistries.fromRegistries;
+import static com.mongodb.client.model.Accumulators.first;
+import static com.mongodb.client.model.Accumulators.last;
+import static com.mongodb.client.model.Accumulators.sum;
+import static com.mongodb.client.model.Accumulators.push;
+import static com.mongodb.client.model.Aggregates.unwind;
+import static com.mongodb.client.model.Sorts.descending;
+import static com.mongodb.client.model.Aggregates.*;
 
 import java.sql.*;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class EstadisticaDAO {
     // TODO: Refactor en más DAOS y cosas así, pero no vale la pena.
 
     final String GETSTATS = "SELECT * FROM ( SELECT cc, ciudad, departamento, total, rank() over (partition by ciudad order by total desc) rank FROM ( SELECT cc, e.miciu.nom AS ciudad, e.miciu.midep.nom AS departamento, SUM(v.miprod.precio_unitario * v.nro_unidades) total FROM empleado e, TABLE (e.ventas) v GROUP BY e.cc, e.miciu.midep.nom, e.miciu.nom ORDER BY total desc ) ) WHERE rank = 1";
     final String GETTOTALCITIES = "SELECT e.miciu.nom AS ciudad, SUM(v.nro_unidades*v.miprod.precio_unitario) AS total FROM empleado e, TABLE(e.ventas) v GROUP BY e.miciu.nom";
-    final String BULKINSERT = "";
 
-    private Map<String, Estadistica> estadisticas;
+    private Map<String, EstadisticaDepartamento> estadisticas;
     private Map<String, Integer> totalCiudad;
+    private List<EstadisticaDepartamento> estadisticaDepartamentos;
+    private List<EstadisticaDepartamento> estadisticasGlobales;
 
     public static String ESTADISTICAS_COLLECTION = "estadisticas";
     private MongoCollection<Document> estadisticasCollection;
@@ -70,7 +72,7 @@ public class EstadisticaDAO {
      * @return Estadistica
      * @throws SQLException
      */
-    public Estadistica transform(ResultSet rs) throws SQLException {
+    public EstadisticaDepartamento transformOracle(ResultSet rs) throws SQLException {
         try {
             // Always create a new Venta.
             Venta venta = new Venta();
@@ -81,14 +83,14 @@ public class EstadisticaDAO {
 
             String depto = rs.getString("departamento");
 
-            Estadistica est;
+            EstadisticaDepartamento est;
 
             if (this.estadisticas.containsKey(depto)) {
                 est = this.estadisticas.get(depto);
                 List<Venta> estVentas = est.getMisVentas();
                 estVentas.add(venta);
             } else {
-                est = new Estadistica();
+                est = new EstadisticaDepartamento();
                 est.setMisVentas(new ArrayList<Venta>());
                 est.setDepartamento(depto);
                 est.getMisVentas().add(venta);
@@ -108,7 +110,7 @@ public class EstadisticaDAO {
      * @return Map<String, Estadistica>
      * @throws SQLException
      */
-    public Map<String, Estadistica> generate() throws SQLException {
+    public Map<String, EstadisticaDepartamento> generate() throws SQLException {
         PreparedStatement pstmt = null;
         ResultSet rs = null;
 
@@ -124,7 +126,7 @@ public class EstadisticaDAO {
             pstmt = oracleConn.prepareStatement(GETSTATS);
             rs = pstmt.executeQuery();
             while (rs.next()) {
-                transform(rs);
+                transformOracle(rs);
             }
         } catch (SQLException ex) {
             throw new SQLException("Error generando estadísticas", ex);
@@ -149,13 +151,13 @@ public class EstadisticaDAO {
 
     /**
      * Inserta en Mongo estadisticos generados en OracleDB.
-     * @param estadisticas - Estadisticas a ser insertadas en Mongo
+     * @param estadisticaDepartamentos - Estadisticas a ser insertadas en Mongo
      * @return InsertManyResult
      * @throws MongoBulkWriteException
      */
-    public InsertManyResult storeInMongo(List<Estadistica> estadisticas) throws MongoBulkWriteException {
+    public InsertManyResult storeInMongo(List<EstadisticaDepartamento> estadisticaDepartamentos) throws MongoBulkWriteException {
         List<Document> documents = new ArrayList<>();
-        for (Estadistica est : estadisticas) {
+        for (EstadisticaDepartamento est : estadisticaDepartamentos) {
             Document estadistica = new Document();
             estadistica.append("departamento", est.getDepartamento());
             ArrayList<Document> misventas = new ArrayList<>();
@@ -179,7 +181,8 @@ public class EstadisticaDAO {
 
     public InsertManyResult storeInMongo() throws MongoBulkWriteException {
         List<Document> documents = new ArrayList<>();
-        for (Estadistica est : this.estadisticas.values()) {
+        this.estadisticasCollection.deleteMany(new Document());
+        for (EstadisticaDepartamento est : this.estadisticas.values()) {
             Document estadistica = new Document();
             estadistica.append("departamento", est.getDepartamento());
             ArrayList<Document> misventas = new ArrayList<>();
@@ -202,34 +205,82 @@ public class EstadisticaDAO {
     }
 
     /**
-     * Trae todas las estadísticas en MongoDB y mappea a objetos.
+     * Trae las estadísticas por departamento en MongoDB y mappea a objetos.
      * @return List<Estadistica>
      */
-    // TODO: Generar las demás estadísticas.
-    public List<Estadistica> getEstadisticas() {
-        List<Document> documents = new ArrayList<>();
-        List<Estadistica> estadisticas = new ArrayList<>();
-        // this.estadisticasCollection.find().iterator().forEachRemaining(documents::add);
-        // TODO: Generar las demás estadísticas.
-        FindIterable<Document> result = this.estadisticasCollection.find();
-        for (Document doc : result) {
-            Estadistica est = new Estadistica();
-            est.setId(doc.getObjectId("_id"));
-            est.setDepartamento(doc.getString("departamento"));
+    // TODO: Generar estadísticas globales.
+    public List<EstadisticaDepartamento> getEstadisticasDepartamentos() {
+        Bson unwind1 = unwind("$misventas");
+        Bson sort1 = sort(descending("misventas.total_vendedor"));
+        BsonField sum1 = sum("total_departamento", "$misventas.total_ciudad");
+        BsonField first1 = first("mejor_vendedor", "$misventas");
+        BsonField last1 = last("peor_vendedor", "$misventas");
+        BsonField push1 = push("misventas", "$misventas");
+        Bson group1 = group("$departamento", sum1, first1, last1, push1);
+        Bson unwind2 = unwind("$misventas");
+        Bson sort2 = sort(descending("misventas.total_ciudad"));
+        BsonField first2 = first("mejor_vendedor", "$mejor_vendedor");
+        BsonField first3 = first("peor_vendedor", "$peor_vendedor");
+        BsonField first4 = first("mejor_ciudad", "$misventas");
+        BsonField first5 = first("total_departamento", "$total_departamento");
+        Bson group2 = group("$_id", first2, first3, first4, first5);
 
-            List<Document> ventas_docs = doc.getList("misventas", Document.class);
-            List<Venta> ventas = new ArrayList<>();
-            for(Document v : ventas_docs) {
-                Venta venta = new Venta();
-                venta.setCcVendedor(v.getString("cc_vendedor"));
-                venta.setNombreCiudad(v.getString("nombre_ciudad"));
-                venta.setTotalCiudad(v.getInteger("total_ciudad"));
-                venta.setTotalVendedor(v.getInteger("total_vendedor"));
-                ventas.add(venta);
-            }
-            est.setMisVentas(ventas);
-            estadisticas.add(est);
+        AggregateIterable<Document> result = this.estadisticasCollection.aggregate(Arrays.asList(unwind1, sort1, group1, unwind2, sort2, group2));
+
+        this.estadisticaDepartamentos = transformMongo(result);
+
+        return estadisticaDepartamentos;
+    }
+
+    /**
+     * Trae las estadísticas globales de MongoDB.
+     * - Nombre y valor del departamento que tuvo el valor total de ventas más alto.
+     * - Nombre y valor de la ciudad que tuvo el valor total de ventas más alto.
+     * - CC y valor del vendedor que tuvo el valor total de ventas más alto.
+     * - CC y valor del vendedor que tuvo el valor total de ventas más bajo.
+     * @return List
+     */
+    public EstadisticaGlobal getEstadisticasGlobales() {
+        Bson unwind = unwind("$misventas");
+        Bson sort = sort(descending("misventas.total_vendedor"));
+        return new EstadisticaGlobal();
+    }
+
+    /**
+     * Transforma queries de Mongo en POJO.
+     * @param documents - Documentos a ser convertidos en objetos
+     * @return
+     */
+    public List<EstadisticaDepartamento> transformMongo(AggregateIterable<Document> documents) {
+        List<EstadisticaDepartamento> estadisticaDepartamentos = new ArrayList<>();
+        for (Document doc : documents) {
+            EstadisticaDepartamento est = new EstadisticaDepartamento();
+            est.setDepartamento(doc.getString("_id"));
+            est.setTotalDepartamento(doc.getInteger("total_departamento"));
+            Venta bestSeller = transformVentaMongo((Document) doc.get("mejor_vendedor"));
+            Venta worstSeller = transformVentaMongo((Document) doc.get("peor_vendedor"));
+            Venta bestCity = transformVentaMongo((Document) doc.get("mejor_ciudad"));
+            est.setMejorVendedor(bestSeller);
+            est.setPeorVendedor(worstSeller);
+            est.setMejorCiudad(bestCity);
+
+            estadisticaDepartamentos.add(est);
         }
-        return estadisticas;
+        return estadisticaDepartamentos;
+    }
+
+    /**
+     * Transforma una venta que viene de Mongo en Objeto
+     * TODO: Refactor into own DAO
+     * @param v Document
+     * @return Venta
+     */
+    public Venta transformVentaMongo(Document v) {
+        Venta venta = new Venta();
+        venta.setNombreCiudad(v.getString("nombre_ciudad"));
+        venta.setTotalVendedor(v.getInteger("total_vendedor"));
+        venta.setTotalCiudad(v.getInteger("total_ciudad"));
+        venta.setCcVendedor(v.getString("cc_vendedor"));
+        return venta;
     }
 }

@@ -1,6 +1,7 @@
 package org.unalmed.daos;
 
 import com.mongodb.MongoBulkWriteException;
+import com.mongodb.MongoException;
 import com.mongodb.client.*;
 import com.mongodb.client.model.BsonField;
 import com.mongodb.client.result.InsertManyResult;
@@ -51,9 +52,17 @@ public class EstadisticaDAO {
         this.estadisticas = new HashMap<>();
         this.totalCiudad = new HashMap<>();
         // OracleDB
-        this.oracleConn = OracleClientInstance.oracleClient();
+        try {
+            this.oracleConn = OracleClientInstance.oracleClient();
+        } catch(SQLException ex) {
+            System.out.println("Hubo un error conectando a la base de datos de Oracle");
+        }
         // MongoDB
-        this.mongoClient = MongoClientInstance.mongoClient();
+        try {
+            this.mongoClient = MongoClientInstance.mongoClient();
+        } catch(MongoException ex) {
+            System.out.println("Hubo un error conectando a la base de datos de MongoDB");
+        }
         this.mongoDatabase = this.mongoClient.getDatabase(System.getProperty("mongodb.database"));
         this.log = LoggerFactory.getLogger(this.getClass());
         // No quiso funcionar el codec ???

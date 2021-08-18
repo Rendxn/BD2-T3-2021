@@ -10,7 +10,7 @@
 <?import javafx.scene.layout.RowConstraints?>
 <?import javafx.scene.text.Font?>
 
-<AnchorPane prefHeight="473.0" prefWidth="1257.0" xmlns="http://javafx.com/javafx/15.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="org.unalmed.controllers.ViewController">
+<AnchorPane prefHeight="473.0" prefWidth="1257.0" xmlns="http://javafx.com/javafx/16" xmlns:fx="http://javafx.com/fxml/1" fx:controller="org.unalmed.controllers.ViewController">
    <children>
       <GridPane alignment="CENTER" layoutX="22.0" prefHeight="471.0" prefWidth="1212.0">
         <columnConstraints>
@@ -24,16 +24,16 @@
             <RowConstraints maxHeight="425.0" minHeight="10.0" prefHeight="42.0" valignment="CENTER" vgrow="SOMETIMES" />
         </rowConstraints>
          <children>
-            <TableView prefHeight="411.0" prefWidth="1033.0" GridPane.rowIndex="1">
+            <TableView fx:id="statsDept" prefHeight="411.0" prefWidth="1033.0" GridPane.rowIndex="1">
               <columns>
-                <TableColumn prefWidth="122.0" text="DEPARTAMENTOS" />
-                <TableColumn prefWidth="141.0" text="TOTAL VENTAS" />
-                  <TableColumn prefWidth="186.0" text="CIUDAD CON MAS VENTAS" />
-                  <TableColumn minWidth="0.0" prefWidth="106.0" text="VENTAS CIUDAD" />
-                  <TableColumn prefWidth="129.0" text="MAYOR VENDEDOR" />
-                  <TableColumn prefWidth="191.0" text="VENTAS MAYOR VENDEDOR" />
-                  <TableColumn prefWidth="148.0" text="MENOR VENDEDOR" />
-                  <TableColumn prefWidth="204.0" text="VENTAS MENOR VENDEDOR" />
+                <TableColumn fx:id="departamento" prefWidth="122.0" text="DEPARTAMENTOS" />
+                <TableColumn fx:id="totalVentasDepartamento" prefWidth="141.0" text="TOTAL VENTAS" />
+                  <TableColumn fx:id="ciudadMasVentas" prefWidth="186.0" text="CIUDAD CON MAS VENTAS" />
+                  <TableColumn fx:id="totalCiudadMasVentas" minWidth="0.0" prefWidth="106.0" text="VENTAS CIUDAD" />
+                  <TableColumn fx:id="mayorVendedor" prefWidth="129.0" text="MAYOR VENDEDOR" />
+                  <TableColumn fx:id="ventasMayorVendedor" prefWidth="191.0" text="VENTAS MAYOR VENDEDOR" />
+                  <TableColumn fx:id="menorVendedor" prefWidth="148.0" text="MENOR VENDEDOR" />
+                  <TableColumn fx:id="ventasMenorVendedor" prefWidth="204.0" text="VENTAS MENOR VENDEDOR" />
               </columns>
             </TableView>
             <Label alignment="CENTER" contentDisplay="CENTER" prefHeight="73.0" prefWidth="726.0" text="ESTADISTICAS POR DEPARTAMENTO" textAlignment="CENTER">
@@ -46,19 +46,19 @@
                   <Font name="Arial Black" size="12.0" />
                </font>
             </Label>
-            <TableView prefHeight="102.0" prefWidth="974.0" GridPane.rowIndex="3">
+            <TableView fx:id="statsGlobal" prefHeight="102.0" prefWidth="974.0" GridPane.rowIndex="3">
                <columns>
-                  <TableColumn prefWidth="224.0" text="DEPARTAMENTO CON MAS VENTAS" />
-                  <TableColumn prefWidth="102.0" text="TOTAL VENTAS" />
-                  <TableColumn prefWidth="166.0" text="CIUDAD CON MAS VENTAS" />
-                  <TableColumn minWidth="0.0" prefWidth="103.0" text="VENTAS CIUDAD" />
-                  <TableColumn prefWidth="122.0" text="MAYOR VENDEDOR" />
-                  <TableColumn prefWidth="173.0" text="VENTAS MAYOR VENDEDOR" />
-                  <TableColumn prefWidth="125.0" text="MENOR VENDEDOR" />
-                  <TableColumn prefWidth="212.0" text="VENTAS MENOR VENDEDOR" />
+                  <TableColumn fx:id="departamentoMasVentas" prefWidth="224.0" text="DEPARTAMENTO CON MAS VENTAS" />
+                  <TableColumn fx:id="totalVentasDepartamentoGlobal" prefWidth="102.0" text="TOTAL VENTAS" />
+                  <TableColumn fx:id="ciudadMasVentasGlobal" prefWidth="166.0" text="CIUDAD CON MAS VENTAS" />
+                  <TableColumn fx:id="ventasCiudadGlobal" minWidth="0.0" prefWidth="103.0" text="VENTAS CIUDAD" />
+                  <TableColumn fx:id="mayorVendedorGlobal" prefWidth="122.0" text="MAYOR VENDEDOR" />
+                  <TableColumn fx:id="ventasMayorVendedorGlobal" prefWidth="173.0" text="VENTAS MAYOR VENDEDOR" />
+                  <TableColumn fx:id="menorVendedorGlobal" prefWidth="125.0" text="MENOR VENDEDOR" />
+                  <TableColumn fx:id="ventasMenorVendedorGlobal" prefWidth="212.0" text="VENTAS MENOR VENDEDOR" />
                </columns>
             </TableView>
-            <Button mnemonicParsing="false" text="Volver al inicio" GridPane.rowIndex="4" onAction="#switchHome" />
+            <Button mnemonicParsing="false" onAction="#switchHome" text="Volver al inicio" GridPane.rowIndex="4" />
          </children>
       </GridPane>
    </children>

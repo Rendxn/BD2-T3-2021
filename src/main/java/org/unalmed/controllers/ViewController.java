@@ -30,11 +30,9 @@ public class ViewController implements Initializable {
     public ViewController() {
         this.estadisticaDAO = new EstadisticaDAO();
         this.estadisticasDepartamento = this.estadisticaDAO.getEstadisticasDepartamentos();
-        //System.out.println(this.estadisticasDepartamento);
         this.estadisticasGlobales = this.estadisticaDAO.getEstadisticasGlobales();
         estadisticasGlobalesAux.add(this.estadisticasGlobales);
-        //System.out.println(this.estadisticasGlobales);
-        //System.out.println(this.estadisticasDepartamento.get(0).getTotalDepartamento());
+
 
     }
 

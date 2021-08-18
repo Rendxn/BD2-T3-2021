@@ -13,7 +13,6 @@ import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TableColumn;
-import javafx.scene.control.cell.PropertyValueFactory;
 import org.unalmed.App;
 import org.unalmed.daos.EstadisticaDAO;
 import org.unalmed.models.EstadisticaDepartamento;
@@ -132,40 +131,6 @@ public class ViewController implements Initializable {
         System.out.println("Estadisticas globales: ");
         System.out.println(estadisticasGlobales);
     }
-
-
-
-
-
-
-    /*
-    private void generarDatos(){
-        for (int i=0; i<estadisticasDepartamento.size(); i++){
-            String departamento = this.estadisticasDepartamento.get(i).getDepartamento();
-            String ventasDpto = String.valueOf(this.estadisticasDepartamento.get(i).getTotalDepartamento());
-            String ciudadMas = this.estadisticasDepartamento.get(i).getMejorCiudad().getNombreCiudad();
-            String totalCiudad = String.valueOf(this.estadisticasDepartamento.get(i).getMejorCiudad().getTotalCiudad());
-            String mayorVendedor = this.estadisticasDepartamento.get(i).getMejorVendedor().getCcVendedor();
-            String totalMayorVendedor = String.valueOf(this.estadisticasDepartamento.get(i).getMejorVendedor().getTotalVendedor()) ;
-            String menorVendedor = this.estadisticasDepartamento.get(i).getPeorVendedor().getCcVendedor();
-            String totalMenorVendedor = String.valueOf(this.estadisticasDepartamento.get(i).getPeorVendedor().getTotalVendedor()) ;
-            //
-
-            estadisticaDepartamentos.addAll(departamento,ventasDpto,ciudadMas,totalCiudad,mayorVendedor,totalMayorVendedor,menorVendedor,totalMenorVendedor);
-
-            if (estadisticaDepartamentos.addAll(departamento,ventasDpto,ciudadMas,totalCiudad,mayorVendedor,totalMayorVendedor,menorVendedor,totalMenorVendedor)){
-                System.out.println("Agrega");
-            }
-            else{
-                System.out.println("Agregan't");
-            }
-
-
-            System.out.println("finalizo");
-        }
-    }
-
-     */
 
     @FXML
     private void switchHome(ActionEvent event) throws IOException {

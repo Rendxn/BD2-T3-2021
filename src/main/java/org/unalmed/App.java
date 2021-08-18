@@ -31,7 +31,7 @@ public class App extends Application {
     private static Scene scene;
 
     public void start(Stage stage) throws IOException {
-        scene = new Scene(loadFXML("home"), 640, 480);
+        scene = new Scene(loadFXML("home"), 1257, 473);
         stage.setScene(scene);
         stage.show();
     }

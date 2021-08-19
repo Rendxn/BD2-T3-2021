@@ -19,11 +19,13 @@ public class HomeController {
     private void generateStats(ActionEvent event) throws IOException {
         try {
             this.estadisticaDAO.generate();
+            System.out.println("Se generaron las estadísticas desde OracleDB");
         } catch (SQLException ex) {
             System.out.println("Hubo un error de SQL: " + ex);
         }
         try {
             this.estadisticaDAO.storeInMongo();
+            System.out.println("Se guardaron las estadísticas en MongoDB");
         } catch (MongoBulkWriteException ex) {
             System.out.println("Hubo un error insertando los datos: " + ex);
         }
@@ -36,6 +38,17 @@ public class HomeController {
 
     @FXML
     private void clearStats(ActionEvent event) throws IOException {
-        App.setRoot("");
+        try {
+            this.estadisticaDAO.generateHistoricoVentas();
+            System.out.println("Se generó el histórico de ventas");
+        } catch (SQLException ex) {
+            System.out.println("Hubo un error de SQL: " + ex);
+        }
+        try {
+            this.estadisticaDAO.clearVentas();
+            System.out.println("Se limpiaron los varrays de ventas de empleados");
+        } catch (SQLException ex) {
+            System.out.println("Hubo un error de SQL: " + ex);
+        }
     }
 }

@@ -4,7 +4,9 @@ import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.ResourceBundle;
+
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -24,7 +26,7 @@ public class ViewController implements Initializable {
     EstadisticaDAO estadisticaDAO;
     List<EstadisticaDepartamento> estadisticasDepartamento;
     EstadisticaGlobal estadisticasGlobales;
-    List <EstadisticaGlobal> estadisticasGlobalesAux = new ArrayList<>();
+    List<EstadisticaGlobal> estadisticasGlobalesAux = new ArrayList<>();
 
 
     public ViewController() {
@@ -99,7 +101,7 @@ public class ViewController implements Initializable {
     private ObservableList<EstadisticaGlobal> globalObservable;
 
     @Override
-    public void initialize (URL url, ResourceBundle rb){
+    public void initialize(URL url, ResourceBundle rb) {
 
 
         statsDept.setItems(FXCollections.observableList(this.estadisticasDepartamento));
@@ -114,9 +116,13 @@ public class ViewController implements Initializable {
         departamentosObservable = FXCollections.observableList(estadisticasDepartamento);
 
         statsGlobal.setItems(FXCollections.observableList(this.estadisticasGlobalesAux));
-        departamentoMasVentas.setCellValueFactory(celda -> new SimpleStringProperty(celda.getValue().getMejorDepartamento().getNom()));
-        totalVentasDepartamentoGlobal.setCellValueFactory(celda -> new SimpleStringProperty(Integer.toString(celda.getValue().getMejorDepartamento().getTotalVentas())));
-        ciudadMasVentasGlobal.setCellValueFactory(celda -> new SimpleStringProperty(celda.getValue().getMejorCiudad().getNombreCiudad()));
+        departamentoMasVentas.setCellValueFactory(celda -> new SimpleStringProperty(
+                celda.getValue().getMejorDepartamento() != null
+                        ? celda.getValue().getMejorDepartamento().getNom() : ""));
+        totalVentasDepartamentoGlobal.setCellValueFactory(celda -> new SimpleStringProperty(
+                Integer.toString(celda.getValue().getMejorDepartamento() != null ? celda.getValue().getMejorDepartamento().getTotalVentas() : 0)));
+        ciudadMasVentasGlobal.setCellValueFactory(celda -> new SimpleStringProperty(
+                celda.getValue().getMejorCiudad() != null ? celda.getValue().getMejorCiudad().getNombreCiudad() : ""));
         ventasCiudadGlobal.setCellValueFactory(celda -> new SimpleStringProperty(Integer.toString(celda.getValue().getMejorCiudad().getTotalCiudad())));
         mayorVendedorGlobal.setCellValueFactory(celda -> new SimpleStringProperty(celda.getValue().getMejorVendedor().getCcVendedor()));
         ventasMayorVendedorGlobal.setCellValueFactory(celda -> new SimpleStringProperty(Integer.toString(celda.getValue().getMejorVendedor().getTotalVendedor())));

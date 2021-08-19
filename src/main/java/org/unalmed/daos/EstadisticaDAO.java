@@ -33,6 +33,20 @@ public class EstadisticaDAO {
 
     final String GETSTATS = "SELECT * FROM ( SELECT cc, ciudad, departamento, total, rank() over (partition by ciudad order by total desc) rank FROM ( SELECT cc, e.miciu.nom AS ciudad, e.miciu.midep.nom AS departamento, SUM(v.miprod.precio_unitario * v.nro_unidades) total FROM empleado e, TABLE (e.ventas) v GROUP BY e.cc, e.miciu.midep.nom, e.miciu.nom ORDER BY total desc ) ) WHERE rank = 1";
     final String GETTOTALCITIES = "SELECT e.miciu.nom AS ciudad, SUM(v.nro_unidades*v.miprod.precio_unitario) AS total FROM empleado e, TABLE(e.ventas) v GROUP BY e.miciu.nom";
+    final String MERGEVENTAARRAYS = "MERGE INTO HISTORICOVENTAS h\n" +
+            "        USING ((SELECT cc,\n" +
+            "                SUM(v.miprod.precio_unitario * v.nro_unidades) totalacumuladoventas\n" +
+            "                FROM empleado e,\n" +
+            "                TABLE (e.ventas) v\n" +
+            "                GROUP BY e.cc)) t\n" +
+            "        ON (t.CC = h.CC)\n" +
+            "    WHEN MATCHED THEN\n" +
+            "        UPDATE SET h.TOTALACUMULADOVENTAS = h.TOTALACUMULADOVENTAS + t.totalacumuladoventas\n" +
+            "    WHEN NOT MATCHED THEN\n" +
+            "        INSERT (cc, totalacumuladoventas)\n" +
+            "        VALUES (t.cc, t.totalacumuladoventas)";
+    final String CLEARVENTAARRAYS = "UPDATE EMPLEADO e SET e.VENTAS = NULL WHERE e.cc = e.cc";
+
 
     private Map<String, EstadisticaDepartamento> estadisticas;
     private Map<String, Integer> totalCiudad;
@@ -209,9 +223,15 @@ public class EstadisticaDAO {
             documents.add(estadistica);
         }
 
-        InsertManyResult result = this.estadisticasCollection.insertMany(documents);
+        InsertManyResult result = null;
 
-        System.out.println(result.toString());
+        if (!documents.isEmpty()) {
+            result = this.estadisticasCollection.insertMany(documents);
+            System.out.println(result.toString());
+        } else {
+            System.out.println("Las estadísticas generadas están vacías");
+        }
+
         return result;
     }
 
@@ -244,11 +264,8 @@ public class EstadisticaDAO {
     }
 
     /**
-     * Trae las estadísticas globales de MongoDB.
-     * - Nombre y valor del departamento que tuvo el valor total de ventas más alto.
-     * - Nombre y valor de la ciudad que tuvo el valor total de ventas más alto.
-     * - CC y valor del vendedor que tuvo el valor total de ventas más alto.
-     * - CC y valor del vendedor que tuvo el valor total de ventas más bajo.
+     * Trae las estadísticas globales de MongoDB, usando las funciones
+     * `getEstadisticasGlobales` y `getEstadisticasVendedores`-
      *
      * @return List
      */
@@ -262,6 +279,10 @@ public class EstadisticaDAO {
         return this.estadisticasGlobales;
     }
 
+    /**
+     * Trae las estadísticas globales de los vendedores de MongoDB.
+     * @return Document
+     */
     public Document getEstadisticasVendedores() {
         Bson unwind = unwind("$misventas");
         Bson sort = sort(descending("misventas.total_vendedor"));
@@ -274,6 +295,10 @@ public class EstadisticaDAO {
         return vendedor.first();
     }
 
+    /**
+     * Trae las estadísticas globales de los regiones de MongoDB.
+     * @return Document
+     */
     public Document getEstadsiticasRegion() {
         Bson unwind1 = unwind("$misventas");
         Bson sort1 = sort(descending("misventas.total_ciudad"));
@@ -328,13 +353,17 @@ public class EstadisticaDAO {
         EstadisticaGlobal estadistica = null;
         estadistica = new EstadisticaGlobal();
 
-        Departamento dept = new Departamento();
-        dept.setNom(reg.getString("nombre_departamento"));
-        dept.setTotalVentas(reg.getInteger("total_departamento"));
-        estadistica.setMejorDepartamento(dept);
-        estadistica.setMejorCiudad(transformVentaMongo((Document) reg.get("mejor_ciudad")));
-        estadistica.setMejorVendedor(transformVentaMongo((Document) vend.get("mejor_vendedor")));
-        estadistica.setPeorVendedor(transformVentaMongo((Document) vend.get("peor_vendedor")));
+        if(reg != null && !reg.isEmpty()) {
+            Departamento dept = new Departamento();
+            dept.setNom(reg.getString("nombre_departamento"));
+            dept.setTotalVentas(reg.getInteger("total_departamento"));
+            estadistica.setMejorDepartamento(dept);
+            estadistica.setMejorCiudad(transformVentaMongo((Document) reg.get("mejor_ciudad")));
+        }
+        if(vend != null && !vend.isEmpty()) {
+            estadistica.setMejorVendedor(transformVentaMongo((Document) vend.get("mejor_vendedor")));
+            estadistica.setPeorVendedor(transformVentaMongo((Document) vend.get("peor_vendedor")));
+        }
 
         return estadistica;
     }
@@ -353,5 +382,68 @@ public class EstadisticaDAO {
         venta.setTotalCiudad(v.getInteger("total_ciudad"));
         venta.setCcVendedor(v.getString("cc_vendedor"));
         return venta;
+    }
+
+    /**
+     * Genera el histórico de ventas basado en
+     * los VArray Ventas de Empleado.
+     * Usando la query `MERGEVENTAARRAYS`.
+     */
+    public void generateHistoricoVentas() throws SQLException {
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+
+        try {
+            pstmt = oracleConn.prepareStatement(MERGEVENTAARRAYS);
+            rs = pstmt.executeQuery();
+        } catch (SQLException ex) {
+            throw new SQLException("Error generando histórico", ex);
+        } finally {
+            if (rs != null) {
+                try {
+                    rs.close();
+                } catch (SQLException ex) {
+                    throw new SQLException("Error cerrando ResultSet al generar histórico", ex);
+                }
+            }
+            if (pstmt != null) {
+                try {
+                    pstmt.close();
+                } catch (SQLException ex) {
+                    throw new SQLException("Error cerrando PreparedStatement al generar histórico", ex);
+                }
+            }
+        }
+    }
+
+    /**
+     * Limpia los VArray Ventas de Empleado.
+     * Usando la query `CLEARVENTAARRAYS`.
+     */
+    public void clearVentas() throws SQLException {
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+
+        try {
+            pstmt = oracleConn.prepareStatement(CLEARVENTAARRAYS);
+            rs = pstmt.executeQuery();
+        } catch (SQLException ex) {
+            throw new SQLException("Error limpiando ventas_varray", ex);
+        } finally {
+            if (rs != null) {
+                try {
+                    rs.close();
+                } catch (SQLException ex) {
+                    throw new SQLException("Error cerrando ResultSet al limpiar ventas_varray", ex);
+                }
+            }
+            if (pstmt != null) {
+                try {
+                    pstmt.close();
+                } catch (SQLException ex) {
+                    throw new SQLException("Error cerrando PreparedStatement al limpiar ventas_varray", ex);
+                }
+            }
+        }
     }
 }

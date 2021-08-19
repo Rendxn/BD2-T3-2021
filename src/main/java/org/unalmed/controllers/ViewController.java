@@ -123,11 +123,16 @@ public class ViewController implements Initializable {
                 Integer.toString(celda.getValue().getMejorDepartamento() != null ? celda.getValue().getMejorDepartamento().getTotalVentas() : 0)));
         ciudadMasVentasGlobal.setCellValueFactory(celda -> new SimpleStringProperty(
                 celda.getValue().getMejorCiudad() != null ? celda.getValue().getMejorCiudad().getNombreCiudad() : ""));
-        ventasCiudadGlobal.setCellValueFactory(celda -> new SimpleStringProperty(Integer.toString(celda.getValue().getMejorCiudad().getTotalCiudad())));
-        mayorVendedorGlobal.setCellValueFactory(celda -> new SimpleStringProperty(celda.getValue().getMejorVendedor().getCcVendedor()));
-        ventasMayorVendedorGlobal.setCellValueFactory(celda -> new SimpleStringProperty(Integer.toString(celda.getValue().getMejorVendedor().getTotalVendedor())));
-        menorVendedorGlobal.setCellValueFactory(celda -> new SimpleStringProperty(celda.getValue().getPeorVendedor().getCcVendedor()));
-        ventasMenorVendedorGlobal.setCellValueFactory(celda -> new SimpleStringProperty(Integer.toString(celda.getValue().getPeorVendedor().getTotalVendedor())));
+        ventasCiudadGlobal.setCellValueFactory(celda -> new SimpleStringProperty(
+                Integer.toString(celda.getValue().getMejorCiudad() != null ? celda.getValue().getMejorCiudad().getTotalCiudad() : 0)));
+        mayorVendedorGlobal.setCellValueFactory(celda -> new SimpleStringProperty(
+                celda.getValue().getMejorVendedor() != null ? celda.getValue().getMejorCiudad().getCcVendedor(): ""));
+        ventasMayorVendedorGlobal.setCellValueFactory(celda -> new SimpleStringProperty(
+                Integer.toString(celda.getValue().getMejorVendedor() !=null ? celda.getValue().getMejorVendedor().getTotalVendedor(): 0)));
+        menorVendedorGlobal.setCellValueFactory(celda -> new SimpleStringProperty(
+                celda.getValue().getPeorVendedor() !=null ? celda.getValue().getPeorVendedor().getCcVendedor(): ""));
+        ventasMenorVendedorGlobal.setCellValueFactory(celda -> new SimpleStringProperty(
+                Integer.toString(celda.getValue().getPeorVendedor() !=null ? celda.getValue().getPeorVendedor().getTotalVendedor(): 0)));
         globalObservable = FXCollections.observableList(estadisticasGlobalesAux);
 
         System.out.println("Estadisticas por departamento: ");
